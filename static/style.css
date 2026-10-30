@@ -1,0 +1,24 @@
+:root { --brand: #4f46e5; --brand-dark: #3730a3; }
+body { background: #f5f6fb; font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+.bg-brand { background: var(--brand) !important; }
+.text-brand { color: var(--brand); }
+.btn-brand { background: var(--brand); color: #fff; }
+.btn-brand:hover { background: var(--brand-dark); color: #fff; }
+.hero { background: linear-gradient(135deg, #4f46e5, #0ea5e9); }
+.feature { transition: transform .15s; }
+.feature:hover { transform: translateY(-3px); }
+.stat .fs-3 { color: #1e1b4b; }
+
+.chat-card { height: 72vh; display: flex; flex-direction: column; }
+.chat-log { overflow-y: auto; flex: 1; display: flex; flex-direction: column; gap: .5rem; }
+.msg { max-width: 80%; padding: .6rem .9rem; border-radius: 1rem; white-space: pre-wrap; line-height: 1.4; }
+.msg.user { align-self: flex-end; background: var(--brand); color: #fff; border-bottom-right-radius: .25rem; }
+.msg.bot { align-self: flex-start; background: #eef0f7; border-bottom-left-radius: .25rem; }
+.msg.crisis { background: #fee2e2; border: 1px solid #ef4444; }
+.msg.warn { background: #fef3c7; border: 1px solid #f59e0b; }
+.msg.typing { opacity: .6; font-style: italic; }
+.rating { min-width: 170px; }
+
+.badge[class*="cat-"] { background: #e0e7ff; color: #3730a3; }
+.badge.cat-neutral { background: #d1fae5; color: #065f46; }
+@media (max-width: 576px) { .msg { max-width: 95%; } .chat-card { height: 80vh; } }

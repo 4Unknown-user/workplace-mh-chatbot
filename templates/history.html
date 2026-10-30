@@ -1,0 +1,23 @@
+{% extends 'base.html' %}
+{% block title %}History{% endblock %}
+{% block content %}
+<h3 class="mb-3"><i class="bi bi-clock-history"></i> My stress history</h3>
+{% if not rows %}<p class="text-muted">No assessments yet. <a href="{{ url_for('chat') }}">Start a chat</a>.</p>{% endif %}
+<div class="table-responsive">
+<table class="table table-hover align-middle bg-white shadow-sm">
+  <thead><tr><th>When</th><th>Message</th><th>Stressor</th><th>Confidence</th><th>Level</th><th>Suggestions given</th></tr></thead>
+  <tbody>
+  {% for r in rows %}
+    <tr>
+      <td class="text-nowrap small">{{ r.created_at }}</td>
+      <td class="small">{{ r.text or '—' }}</td>
+      <td><span class="badge cat-{{ r.category }}">{{ LABELS[r.category] }}</span></td>
+      <td>{{ (r.confidence * 100)|round|int }}%</td>
+      <td><span class="badge text-bg-{{ 'danger' if r.stress_level >= 8 else 'warning' if r.stress_level >= 5 else 'success' }}">{{ r.stress_level }}/10</span></td>
+      <td class="small"><ul class="ps-3 mb-0">{% for t in recs.get(r.id, []) %}<li>{{ t }}</li>{% endfor %}</ul></td>
+    </tr>
+  {% endfor %}
+  </tbody>
+</table>
+</div>
+{% endblock %}

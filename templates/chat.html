@@ -1,0 +1,40 @@
+{% extends 'base.html' %}
+{% block title %}Chat{% endblock %}
+{% block content %}
+<div class="row g-4">
+  <div class="col-lg-8">
+    <div class="card shadow-sm border-0 chat-card">
+      <div class="card-header bg-white"><i class="bi bi-robot text-brand"></i> <b>MindWork assistant</b>
+        <span class="small text-muted">· private to you</span></div>
+      <div class="card-body chat-log" id="log" aria-live="polite">
+        <div class="msg bot">Hi {{ user.name }}! How are things at work today? Tell me what's on your mind.</div>
+        {% for m in messages %}<div class="msg {{ m.sender }}">{{ m.text }}</div>{% endfor %}
+      </div>
+      <div class="card-footer bg-white">
+        <form id="chatForm" class="d-flex gap-2 align-items-end flex-wrap">
+          <textarea id="msg" class="form-control flex-grow-1" rows="2" maxlength="1000"
+                    placeholder="e.g. My manager keeps adding tasks and the deadline is Friday..." required></textarea>
+          <div class="rating">
+            <label for="rate" class="form-label small mb-0">How stressed? <b id="rateVal">–</b>/10 (optional)</label>
+            <input type="range" id="rate" class="form-range" min="0" max="10" value="0">
+          </div>
+          <button class="btn btn-brand px-4"><i class="bi bi-send"></i></button>
+        </form>
+      </div>
+    </div>
+  </div>
+  <div class="col-lg-4">
+    <div class="card shadow-sm border-0 mb-3"><div class="card-body">
+      <h6 class="text-muted">Latest analysis</h6>
+      <div id="analysis" class="text-muted small">Send a message to see the detected workplace stressor.</div>
+    </div></div>
+    <div class="card shadow-sm border-0"><div class="card-body">
+      <h6 class="text-muted">Recommendations for you</h6>
+      <ul id="recs" class="small ps-3 mb-0"><li class="text-muted">They'll appear here.</li></ul>
+    </div></div>
+    <p class="small text-muted mt-3"><i class="bi bi-info-circle"></i> MindWork is not a clinician and cannot diagnose
+      conditions. If you're in crisis call Tele-MANAS 14416 or 112.</p>
+  </div>
+</div>
+{% endblock %}
+{% block scripts %}<script src="{{ url_for('static', filename='chat.js') }}"></script>{% endblock %}

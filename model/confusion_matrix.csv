@@ -1,0 +1,9 @@
+true\pred,conflict,deadline,job_insecurity,low_motivation,management,neutral,work_life,workload
+conflict,41,0,0,2,0,10,0,6
+deadline,0,60,0,0,0,0,0,0
+job_insecurity,1,16,37,0,0,1,0,3
+low_motivation,0,0,0,42,4,0,6,7
+management,1,0,0,0,59,0,0,0
+neutral,0,4,0,6,0,49,1,0
+work_life,0,0,4,0,0,0,51,5
+workload,12,0,0,0,0,0,0,48

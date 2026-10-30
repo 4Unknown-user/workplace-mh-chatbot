@@ -1,0 +1,42 @@
+{% extends 'base.html' %}
+{% block title %}Trends{% endblock %}
+{% block content %}
+<h3 class="mb-3"><i class="bi bi-graph-up"></i> My stress trends</h3>
+<div class="row g-3 mb-3">
+  <div class="col-6 col-md-3"><div class="card stat border-0 shadow-sm"><div class="card-body">
+    <div class="text-muted small">Check-ins</div><div class="fs-3 fw-bold" id="sTotal">–</div></div></div></div>
+  <div class="col-6 col-md-3"><div class="card stat border-0 shadow-sm"><div class="card-body">
+    <div class="text-muted small">This week avg</div><div class="fs-3 fw-bold" id="sWeek">–</div></div></div></div>
+  <div class="col-6 col-md-3"><div class="card stat border-0 shadow-sm"><div class="card-body">
+    <div class="text-muted small">This month avg</div><div class="fs-3 fw-bold" id="sMonth">–</div></div></div></div>
+  <div class="col-6 col-md-3"><a href="{{ url_for('warnings') }}" class="text-decoration-none"><div class="card stat border-0 shadow-sm"><div class="card-body">
+    <div class="text-muted small">Unread alerts</div><div class="fs-3 fw-bold text-danger" id="sWarn">–</div></div></div></a></div>
+</div>
+<div class="row g-3">
+  <div class="col-lg-8"><div class="card border-0 shadow-sm"><div class="card-body">
+    <h6>Daily average stress (last 60 days)</h6><canvas id="daily" height="120"></canvas></div></div></div>
+  <div class="col-lg-4"><div class="card border-0 shadow-sm"><div class="card-body">
+    <h6>My most frequent stressors</h6><canvas id="cats"></canvas></div></div></div>
+  <div class="col-md-6"><div class="card border-0 shadow-sm"><div class="card-body">
+    <h6>Weekly average</h6><canvas id="weekly" height="160"></canvas></div></div></div>
+  <div class="col-md-6"><div class="card border-0 shadow-sm"><div class="card-body">
+    <h6>Monthly average</h6><canvas id="monthly" height="160"></canvas></div></div></div>
+</div>
+{% endblock %}
+{% block scripts %}
+<script>const LABELS = {{ LABELS|tojson }};</script>
+<script src="{{ url_for('static', filename='charts.js') }}"></script>
+<script>
+fetch('/api/trends').then(r => r.json()).then(d => {
+  const last = a => a.length ? a[a.length - 1].avg.toFixed(1) : '–';
+  document.getElementById('sTotal').textContent = d.categories.reduce((s, c) => s + c.n, 0);
+  document.getElementById('sWeek').textContent = last(d.weekly);
+  document.getElementById('sMonth').textContent = last(d.monthly);
+  document.getElementById('sWarn').textContent = d.open_warnings;
+  lineChart('daily', d.daily, d.thresholds.elevated_avg);
+  barChart('weekly', d.weekly);
+  barChart('monthly', d.monthly);
+  doughnut('cats', d.categories.map(c => LABELS[c.category]), d.categories.map(c => c.n));
+});
+</script>
+{% endblock %}
