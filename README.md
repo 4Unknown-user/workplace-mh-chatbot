@@ -8,6 +8,10 @@ B.Tech CSE-AIML in-house project. A Flask web app where employees chat about wor
 
 > MindWork is a self-help and educational tool. It does **not** diagnose and does **not** replace professional care. Crisis messages bypass the ML model and return helplines right away.
 
+## Interface
+
+App shell with a navigation rail (bottom bar on phones), a home page with streak, weekly score and badges, a topic-based chat workspace with inline analysis cards, a glass trends dashboard with key metrics and insights, and an anonymous admin view. Every number on screen comes from the employee's real check-ins.
+
 ## Architecture
 
 ```
@@ -37,7 +41,7 @@ workplace-mh-chatbot/
 │   └── workplace_stress.csv   (generated, 1,903 rows, 8 labels)
 ├── ml/train.py
 ├── model/                 stress_model.joblib, metrics.txt, confusion_matrix.csv
-├── templates/             base, index, register, login, chat, history, dashboard, warnings, admin
+├── templates/             base, index, home, register, login, chat, history, dashboard, warnings, admin
 ├── static/                style.css, chat.js, charts.js
 └── instance/wellbeing.db  (created on first run)
 ```

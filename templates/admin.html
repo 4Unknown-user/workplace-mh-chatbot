@@ -1,25 +1,23 @@
 {% extends 'base.html' %}
 {% block title %}Organisation well-being{% endblock %}
+{% block bodyclass %}bg-glass{% endblock %}
 {% block content %}
-<h3 class="mb-1"><i class="bi bi-building"></i> Organisation well-being (anonymous)</h3>
-<p class="text-muted small"><i class="bi bi-shield-lock"></i> Only aggregated numbers are shown. Individual conversations,
-  names and per-employee scores are never available to administrators. Any group with fewer than {{ min_group }}
-  employees is hidden to prevent re-identification.</p>
-<div class="row g-3 mb-3">
-  {% for id, label in [('employees','Registered employees'), ('active_30d','Active (30 days)'),
-                       ('assessments','Total check-ins'), ('avg_stress_30d','Avg stress (30 days)'),
-                       ('employees_with_open_warnings','Employees with open alerts')] %}
-  <div class="col-6 col-lg"><div class="card stat border-0 shadow-sm"><div class="card-body">
-    <div class="text-muted small">{{ label }}</div><div class="fs-3 fw-bold" id="{{ id }}">–</div></div></div></div>
+<h1 class="page-title">Organisation Well-being</h1>
+<p class="lede"><i class="bi bi-shield-lock"></i> Aggregated numbers only. Conversations, names and individual scores are
+  never available here, and any group under {{ min_group }} employees is hidden to prevent re-identification.</p>
+<div class="stat-row">
+  {% for id, label in [('employees','Registered employees'), ('active_30d','Active (30 days)'), ('assessments','Total check-ins'),
+                       ('avg_stress_30d','Avg stress (30 days)'), ('employees_with_open_warnings','With open alerts')] %}
+  <div class="glass mini"><div class="mini-num" id="{{ id }}">–</div><p>{{ label }}</p></div>
   {% endfor %}
 </div>
-<div class="row g-3">
-  <div class="col-lg-8"><div class="card border-0 shadow-sm"><div class="card-body">
-    <h6>Organisation-wide weekly average stress</h6><canvas id="weekly" height="120"></canvas></div></div></div>
-  <div class="col-lg-4"><div class="card border-0 shadow-sm"><div class="card-body">
-    <h6>Stressor distribution</h6><canvas id="cats"></canvas></div></div></div>
-  <div class="col-12"><div class="card border-0 shadow-sm"><div class="card-body">
-    <h6>Average stress by department</h6><canvas id="depts" height="80"></canvas></div></div></div>
+<div class="glass trends">
+  <div class="trends-head"><h4>Organisation Weekly Trend</h4></div>
+  <div class="chart-box wide"><canvas id="weekly"></canvas></div>
+</div>
+<div class="grid-2 mt-3">
+  <div class="glass pad"><h6>Stressor distribution</h6><div class="chart-sm"><canvas id="cats"></canvas></div></div>
+  <div class="glass pad"><h6>Average stress by department</h6><div class="chart-sm"><canvas id="depts"></canvas></div></div>
 </div>
 {% endblock %}
 {% block scripts %}
@@ -29,7 +27,7 @@
 fetch('/api/admin/stats').then(r => r.json()).then(d => {
   for (const k of ['employees', 'active_30d', 'assessments', 'avg_stress_30d', 'employees_with_open_warnings'])
     document.getElementById(k).textContent = d[k] ?? '<{{ min_group }}';
-  lineChart('weekly', d.weekly, 7);
+  barChart('weekly', d.weekly);
   doughnut('cats', d.categories.map(c => LABELS[c.category]), d.categories.map(c => c.n));
   barChart('depts', d.departments.map(x => ({ period: x.department, avg: x.avg })));
 });

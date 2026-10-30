@@ -38,6 +38,12 @@ def main():
     recs = engine.recommend("workload", seen_keys=list(engine.RECS["workload"])[:3], category_count_14d=0, has_warning=False)
     assert all(k not in list(engine.RECS["workload"])[:3] for k, _ in recs), "should prefer unseen suggestions"
 
+    from datetime import date
+    s = engine.summary([("2026-01-03 20:00:00", 8, "workload"), ("2026-01-04 10:00:00", 6, "workload"),
+                        ("2026-01-05 10:00:00", 4, "neutral")], today=date(2026, 1, 5))
+    assert s["streak"] == 3 and s["week_avg"] == 6.0 and s["after_hours"] == 2 and s["top_stressor"] == "Workload Stress"
+    assert engine.summary([("2026-01-01 10:00:00", 5, "neutral")], today=date(2026, 1, 5))["streak"] == 0
+
     c = app.test_client()
     assert c.get("/chat").status_code == 302  # login required
     tok = register_login(c, "e1@test.local")

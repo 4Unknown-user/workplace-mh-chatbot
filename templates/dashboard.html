@@ -1,41 +1,77 @@
 {% extends 'base.html' %}
 {% block title %}Trends{% endblock %}
+{% block bodyclass %}bg-glass{% endblock %}
 {% block content %}
-<h3 class="mb-3"><i class="bi bi-graph-up"></i> My stress trends</h3>
-<div class="row g-3 mb-3">
-  <div class="col-6 col-md-3"><div class="card stat border-0 shadow-sm"><div class="card-body">
-    <div class="text-muted small">Check-ins</div><div class="fs-3 fw-bold" id="sTotal">–</div></div></div></div>
-  <div class="col-6 col-md-3"><div class="card stat border-0 shadow-sm"><div class="card-body">
-    <div class="text-muted small">This week avg</div><div class="fs-3 fw-bold" id="sWeek">–</div></div></div></div>
-  <div class="col-6 col-md-3"><div class="card stat border-0 shadow-sm"><div class="card-body">
-    <div class="text-muted small">This month avg</div><div class="fs-3 fw-bold" id="sMonth">–</div></div></div></div>
-  <div class="col-6 col-md-3"><a href="{{ url_for('warnings') }}" class="text-decoration-none"><div class="card stat border-0 shadow-sm"><div class="card-body">
-    <div class="text-muted small">Unread alerts</div><div class="fs-3 fw-bold text-danger" id="sWarn">–</div></div></div></a></div>
+<h1 class="page-title">My Stress Dashboard</h1>
+<div class="dash-top">
+  <div>
+    <h6 class="sec">Key metrics</h6>
+    <div class="glass metrics">
+      <div class="metric"><div class="score"><b id="mWeek">–</b> / 10</div><p>Weekly <strong>stress</strong> score</p><small id="dWeek"></small></div>
+      <div class="metric"><div class="score"><b id="mMonth">–</b> / 10</div><p>Monthly <strong>stress</strong> score</p><small id="dMonth"></small></div>
+      <a class="btn btn-green w-100" href="{{ url_for('warnings') }}"><span id="mAlerts">0</span> unread alerts</a>
+    </div>
+  </div>
+  <div>
+    <h6 class="sec">Insights</h6>
+    <div class="insights">
+      <div class="glass mini"><div class="strip" id="strip"></div><p id="iDays">Check in on more days to compare them.</p></div>
+      <div class="glass mini"><div class="mini-num" id="iAfter">–</div><p>check-ins outside working hours this week</p><small id="iAfterD"></small></div>
+      <div class="glass mini"><div class="mini-num" id="iStreak">–</div><p>day streak, longest <b id="iLong">–</b></p></div>
+      <div class="glass mini"><div class="mini-txt" id="iTop">–</div><p>your top stressor in the last 30 days</p></div>
+    </div>
+  </div>
 </div>
-<div class="row g-3">
-  <div class="col-lg-8"><div class="card border-0 shadow-sm"><div class="card-body">
-    <h6>Daily average stress (last 60 days)</h6><canvas id="daily" height="120"></canvas></div></div></div>
-  <div class="col-lg-4"><div class="card border-0 shadow-sm"><div class="card-body">
-    <h6>My most frequent stressors</h6><canvas id="cats"></canvas></div></div></div>
-  <div class="col-md-6"><div class="card border-0 shadow-sm"><div class="card-body">
-    <h6>Weekly average</h6><canvas id="weekly" height="160"></canvas></div></div></div>
-  <div class="col-md-6"><div class="card border-0 shadow-sm"><div class="card-body">
-    <h6>Monthly average</h6><canvas id="monthly" height="160"></canvas></div></div></div>
+
+<div class="glass trends">
+  <div class="trends-head">
+    <h4>Stress Trends</h4>
+    <select id="range" class="form-select form-select-sm" aria-label="Date range">
+      <option value="14">Last two weeks</option><option value="30" selected>Last 30 days</option><option value="60">Last 60 days</option>
+    </select>
+  </div>
+  <div class="trends-body">
+    <div class="chart-box"><canvas id="daily"></canvas></div>
+    <div class="narrative" id="story"></div>
+  </div>
+</div>
+
+<div class="grid-3 mt-3">
+  <div class="glass pad"><h6>Stressor mix</h6><div class="chart-sm"><canvas id="cats"></canvas></div></div>
+  <div class="glass pad"><h6>Weekly average</h6><div class="chart-sm"><canvas id="weekly"></canvas></div></div>
+  <div class="glass pad"><h6>Monthly average</h6><div class="chart-sm"><canvas id="monthly"></canvas></div></div>
 </div>
 {% endblock %}
 {% block scripts %}
 <script>const LABELS = {{ LABELS|tojson }};</script>
 <script src="{{ url_for('static', filename='charts.js') }}"></script>
 <script>
+const set = (id, v) => (document.getElementById(id).textContent = v ?? '–');
 fetch('/api/trends').then(r => r.json()).then(d => {
-  const last = a => a.length ? a[a.length - 1].avg.toFixed(1) : '–';
-  document.getElementById('sTotal').textContent = d.categories.reduce((s, c) => s + c.n, 0);
-  document.getElementById('sWeek').textContent = last(d.weekly);
-  document.getElementById('sMonth').textContent = last(d.monthly);
-  document.getElementById('sWarn').textContent = d.open_warnings;
-  lineChart('daily', d.daily, d.thresholds.elevated_avg);
-  barChart('weekly', d.weekly);
-  barChart('monthly', d.monthly);
+  const s = d.summary;
+  set('mWeek', s.week_avg); set('mMonth', s.month_avg); set('mAlerts', d.open_warnings);
+  deltaText('dWeek', s.week_delta, 'last week'); deltaText('dMonth', s.month_delta, 'last month');
+  set('iAfter', s.after_hours); set('iStreak', s.streak); set('iLong', s.longest_streak); set('iTop', s.top_stressor);
+  const diff = s.after_hours - s.after_hours_prev;
+  set('iAfterD', `${diff > 0 ? '+' : ''}${diff} vs last week`);
+  dayStrip('strip', s.week_strip);
+  if (s.best_day) {
+    const p = document.getElementById('iDays');
+    p.textContent = '';
+    p.append('Calmest on ', Object.assign(document.createElement('b'), { textContent: s.best_day }),
+             ', most stressed on ', Object.assign(document.createElement('b'), { textContent: s.worst_day }));
+  }
+  const story = document.getElementById('story');
+  story.append(...(s.week_count ? [
+    `This week you checked in ${s.week_count} time${s.week_count > 1 ? 's' : ''}.`,
+    `Your highest stress was ${s.week_high}/10 and your lowest was ${s.week_low}/10.`,
+    `Your average was ${s.week_avg}/10.`,
+  ] : ['No check-ins this week yet.']).map(t => Object.assign(document.createElement('p'), { textContent: t })));
+  const draw = () => stressLine('daily', d.daily, d.thresholds.elevated_avg, +document.getElementById('range').value);
+  document.getElementById('range').onchange = draw;
+  draw();
+  barChart('weekly', d.weekly.slice(-8));
+  barChart('monthly', d.monthly.slice(-6));
   doughnut('cats', d.categories.map(c => LABELS[c.category]), d.categories.map(c => c.n));
 });
 </script>

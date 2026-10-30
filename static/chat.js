@@ -1,28 +1,59 @@
 const log = document.getElementById('log');
 const rate = document.getElementById('rate');
+const box = document.getElementById('msg');
 const csrf = document.querySelector('meta[name=csrf]').content;
 log.scrollTop = log.scrollHeight;
 rate.oninput = () => (document.getElementById('rateVal').textContent = rate.value === '0' ? '–' : rate.value);
 
-function add(sender, text, extraClass = '') {
-  const d = document.createElement('div');
-  d.className = `msg ${sender} ${extraClass}`;
-  d.textContent = text; // textContent: never inject user text as HTML
-  log.appendChild(d);
-  log.scrollTop = log.scrollHeight;
-  return d;
+// el() always uses textContent: user and model text is never injected as HTML
+function el(tag, cls, text) {
+  const e = document.createElement(tag);
+  if (cls) e.className = cls;
+  if (text !== undefined) e.textContent = text;
+  return e;
 }
 
-function levelClass(l) { return l >= 8 ? 'danger' : l >= 5 ? 'warning' : 'success'; }
+function add(sender, text, extraClass = '') {
+  const m = el('div', `msg ${sender} ${extraClass}`);
+  const ic = el('span', 'who-ic');
+  ic.appendChild(el('i', `bi ${sender === 'bot' ? 'bi-flower1' : 'bi-person'}`));
+  const b = el('div', 'bubble', text);
+  m.append(ic, b);
+  log.appendChild(m);
+  log.scrollTop = log.scrollHeight;
+  return b;
+}
+
+function insight(bubble, d, recs, disclaimer) {
+  const card = el('div', 'insight');
+  const head = el('div', 'insight-head');
+  head.append(el('b', '', d.label), el('span', `lvl lvl-${d.stress_level >= 8 ? 'high' : d.stress_level >= 5 ? 'mid' : 'low'}`, `Stress ${d.stress_level}/10`));
+  const bar = el('div', 'conf');
+  const fill = el('i');
+  fill.style.width = `${d.confidence * 100}%`;
+  bar.appendChild(fill);
+  const ul = el('ul', 'recs');
+  recs.forEach((r) => ul.appendChild(el('li', '', r)));
+  card.append(head, bar, el('small', '', `Model confidence ${(d.confidence * 100).toFixed(0)}%`), ul, el('small', 'muted', disclaimer));
+  bubble.appendChild(card);
+  log.scrollTop = log.scrollHeight;
+}
+
+document.querySelectorAll('.topic').forEach((t) => {
+  t.onclick = () => { box.value = t.dataset.starter; box.focus(); };
+});
+
+box.addEventListener('keydown', (e) => {
+  if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); document.getElementById('chatForm').requestSubmit(); }
+});
 
 document.getElementById('chatForm').onsubmit = async (e) => {
   e.preventDefault();
-  const box = document.getElementById('msg');
   const text = box.value.trim();
   if (!text) return;
   add('user', text);
   box.value = '';
-  const typing = add('bot', 'typing…', 'typing');
+  const typing = add('bot', 'typing…', 'typing').parentElement;
   try {
     const res = await fetch('/api/chat', {
       method: 'POST',
@@ -33,23 +64,10 @@ document.getElementById('chatForm').onsubmit = async (e) => {
     typing.remove();
     if (!res.ok) return add('bot', data.error || 'Something went wrong.');
     if (data.crisis) return add('bot', data.reply, 'crisis');
-
-    add('bot', data.reply + '\n- ' + data.recommendations.join('\n- '));
-    const d = data.detection;
-    const a = document.getElementById('analysis');
-    a.className = '';
-    a.innerHTML = `<div class="fs-5 fw-semibold"></div>
-      <div class="small text-muted mb-2">Confidence ${(d.confidence * 100).toFixed(0)}%</div>
-      <div class="progress mb-1" role="progressbar" aria-label="confidence"><div class="progress-bar bg-brand" style="width:${d.confidence * 100}%"></div></div>
-      <span class="badge text-bg-${levelClass(d.stress_level)} mt-2">Stress level ${d.stress_level}/10</span>
-      <div class="small text-muted mt-2">${data.disclaimer}</div>`;
-    a.firstElementChild.textContent = d.label;
-    const ul = document.getElementById('recs');
-    ul.innerHTML = '';
-    data.recommendations.forEach((r) => { const li = document.createElement('li'); li.textContent = r; ul.appendChild(li); });
-    data.warnings.forEach((w) => add('bot', '⚠ Early warning: ' + w + ' See the Alerts page.', 'warn'));
+    insight(add('bot', data.reply), data.detection, data.recommendations, data.disclaimer);
+    data.warnings.forEach((w) => add('bot', `Early warning: ${w} See your Alerts page.`, 'warn'));
   } catch {
     typing.remove();
-    add('bot', 'Network error — please try again.');
+    add('bot', 'Network error, please try again.');
   }
 };

@@ -1,25 +1,25 @@
 {% extends 'base.html' %}
 {% block title %}Register{% endblock %}
-{% block content %}
-<div class="row justify-content-center"><div class="col-md-6 col-lg-5">
-  <div class="card shadow-sm border-0"><div class="card-body p-4">
-    <h3 class="mb-3">Create employee account</h3>
-    <form method="post">
-      <input type="hidden" name="csrf" value="{{ csrf }}">
-      <div class="mb-3"><label class="form-label" for="name">Name</label>
-        <input class="form-control" id="name" name="name" required></div>
-      <div class="mb-3"><label class="form-label" for="email">Work email</label>
-        <input class="form-control" id="email" name="email" type="email" required></div>
-      <div class="mb-3"><label class="form-label" for="department">Department (optional, used only in anonymous stats)</label>
-        <select class="form-select" id="department" name="department">
-          <option value="">Prefer not to say</option>
-          {% for d in ['Engineering', 'Sales', 'Marketing', 'Operations', 'HR', 'Finance', 'Support'] %}<option>{{ d }}</option>{% endfor %}
-        </select></div>
-      <div class="mb-3"><label class="form-label" for="password">Password (min 8 characters)</label>
-        <input class="form-control" id="password" name="password" type="password" minlength="8" required></div>
-      <button class="btn btn-brand w-100">Register</button>
-    </form>
-    <p class="mt-3 mb-0 small">Already registered? <a href="{{ url_for('login') }}">Log in</a></p>
-  </div></div>
-</div></div>
+{% block bodyclass %}bg-pastel{% endblock %}
+{% block public %}
+<div class="auth card-soft">
+  <h2>Create your account</h2>
+  <p>Your conversations stay private to you.</p>
+  <form method="post">
+    <input type="hidden" name="csrf" value="{{ csrf }}">
+    <div class="mb-3"><label class="form-label" for="name">Name</label>
+      <input class="form-control" id="name" name="name" required></div>
+    <div class="mb-3"><label class="form-label" for="email">Work email</label>
+      <input class="form-control" id="email" name="email" type="email" required></div>
+    <div class="mb-3"><label class="form-label" for="department">Department (used only in anonymous stats)</label>
+      <select class="form-select" id="department" name="department">
+        <option value="">Prefer not to say</option>
+        {% for d in ['Engineering', 'Sales', 'Marketing', 'Operations', 'HR', 'Finance', 'Support'] %}<option>{{ d }}</option>{% endfor %}
+      </select></div>
+    <div class="mb-3"><label class="form-label" for="password">Password (min 8 characters)</label>
+      <input class="form-control" id="password" name="password" type="password" minlength="8" required></div>
+    <button class="btn btn-brand w-100">Register</button>
+  </form>
+  <p class="mt-3 mb-0">Already registered? <a href="{{ url_for('login') }}">Log in</a></p>
+</div>
 {% endblock %}

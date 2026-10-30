@@ -1,0 +1,56 @@
+{% extends 'base.html' %}
+{% block title %}Home{% endblock %}
+{% block bodyclass %}bg-pastel{% endblock %}
+{% block content %}
+<section class="hero-card">
+  <div>
+    <span class="hello"><span class="avatar lg"><i class="bi bi-flower1"></i></span> Hi {{ user.name }}!</span>
+    <h1>Your space to breathe at work</h1>
+    <p>I'm here to help you notice what's stressing you and take one small step today.</p>
+    <a href="{{ url_for('chat') }}" class="btn btn-brand">Chat with assistant <i class="bi bi-arrow-right"></i></a>
+    <a href="{{ url_for('dashboard') }}" class="btn btn-gold">See my trends <i class="bi bi-graph-up"></i></a>
+  </div>
+  <div class="hero-art" aria-hidden="true"><i class="c1"></i><i class="c2"></i><i class="c3"></i><span class="wave"><i class="bi bi-activity"></i></span></div>
+</section>
+
+<div class="grid-3">
+  <div class="card-soft line-orange">
+    <h4 class="t-orange"><i class="bi bi-chat-dots"></i> Quick chat</h4>
+    <p>Tell me what's on your mind right now.</p>
+    <a href="{{ url_for('chat') }}" class="btn btn-grad btn-sm">Start chatting</a>
+  </div>
+  <div class="card-soft line-gold">
+    <h4 class="t-gold"><i class="bi bi-calendar-week"></i> This week</h4>
+    <p>Your average stress over 7 days.</p>
+    <div class="big">{{ s.week_avg if s.week_avg is not none else '–' }}<small> / 10</small></div>
+  </div>
+  <div class="card-soft line-green">
+    <h4 class="t-green"><i class="bi bi-graph-up"></i> Recent progress</h4>
+    <p>{{ s.week_count }} check-in{{ '' if s.week_count == 1 else 's' }} in the last 7 days.</p>
+    <div class="check"><i class="bi bi-check-circle"></i>
+      {% if s.top_stressor %}Most common: {{ s.top_stressor }}{% else %}No stressors logged yet{% endif %}</div>
+  </div>
+</div>
+
+<div class="grid-2">
+  <div class="card-soft">
+    <h4>Badges</h4>
+    <p>Earned by checking in regularly.</p>
+    <div class="badges">
+      {% for b in s.badges %}
+      <div class="stick {{ 'on' if b.earned }}"><i class="bi {{ b.icon }}"></i><span>{{ b.title }}</span>
+        <span class="visually-hidden">{{ 'earned' if b.earned else 'not earned yet' }}</span></div>
+      {% endfor %}
+    </div>
+  </div>
+  <div class="card-soft">
+    <h4>Emotional safety</h4>
+    <p>How MindWork looks after you.</p>
+    <ul class="safe">
+      <li><i class="bi bi-lock"></i> Your conversations are visible only to you</li>
+      <li><i class="bi bi-heart-pulse"></i> Crisis messages go straight to real helplines</li>
+      <li><i class="bi bi-person-check"></i> Support tool only: no diagnosis, not a replacement for care</li>
+    </ul>
+  </div>
+</div>
+{% endblock %}

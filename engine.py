@@ -5,6 +5,7 @@
 """
 import random
 import re
+from datetime import datetime, timedelta
 from pathlib import Path
 
 import joblib
@@ -214,3 +215,68 @@ def recommend(category, seen_keys, category_count_14d, has_warning, k=3):
 
 def reply_text(category):
     return random.choice(EMPATHY[category])
+
+
+def after_hours(t):
+    return t.weekday() >= 5 or t.hour < 9 or t.hour >= 18
+
+
+def summary(rows, today=None):
+    """Dashboard numbers from (created_at, stress_level, category) rows.
+    Everything shown on the home and trends pages comes from here, so no card
+    displays a number the employee didn't generate."""
+    today = today or datetime.now().date()
+    rows = [(datetime.strptime(c, "%Y-%m-%d %H:%M:%S"), l, cat) for c, l, cat in rows]
+    days = {t.date() for t, _, _ in rows}
+
+    def window(start, end):
+        return [r for r in rows if start <= (today - r[0].date()).days < end]
+
+    def mean(rs):
+        return round(sum(r[1] for r in rs) / len(rs), 1) if rs else None
+
+    def delta(a, b):
+        return round(a - b, 1) if a is not None and b is not None else None
+
+    streak, d = 0, today if today in days else today - timedelta(days=1)
+    while d in days:
+        streak, d = streak + 1, d - timedelta(days=1)
+    longest = run = 0
+    for d in sorted(days):
+        run = run + 1 if d - timedelta(days=1) in days else 1
+        longest = max(longest, run)
+
+    week, prev_week, month, prev_month = window(0, 7), window(7, 14), window(0, 30), window(30, 60)
+    by_weekday = {}
+    for t, l, _ in month:
+        by_weekday.setdefault(t.strftime("%A"), []).append(l)
+    weekday_avg = {k: sum(v) / len(v) for k, v in by_weekday.items()}
+    stressors = {}
+    for _, _, c in month:
+        if c != "neutral":
+            stressors[c] = stressors.get(c, 0) + 1
+    top = max(stressors, key=stressors.get) if stressors else None
+    strip = []
+    for back in range(6, -1, -1):
+        d = today - timedelta(days=back)
+        strip.append({"day": d.strftime("%a"), "avg": mean([r for r in rows if r[0].date() == d])})
+    levels = [r[1] for r in week]
+    n = len(rows)
+    return {
+        "total": n, "streak": streak, "longest_streak": longest,
+        "week_avg": mean(week), "week_delta": delta(mean(week), mean(prev_week)),
+        "month_avg": mean(month), "month_delta": delta(mean(month), mean(prev_month)),
+        "week_high": max(levels, default=None), "week_low": min(levels, default=None), "week_count": len(week),
+        "best_day": min(weekday_avg, key=weekday_avg.get) if len(weekday_avg) > 1 else None,
+        "worst_day": max(weekday_avg, key=weekday_avg.get) if len(weekday_avg) > 1 else None,
+        "after_hours": sum(after_hours(r[0]) for r in week),
+        "after_hours_prev": sum(after_hours(r[0]) for r in prev_week),
+        "top_stressor": LABELS[top] if top else None, "week_strip": strip,
+        "badges": [
+            {"icon": "bi-chat-heart", "title": "First check-in", "earned": n >= 1},
+            {"icon": "bi-fire", "title": "3-day streak", "earned": longest >= 3},
+            {"icon": "bi-calendar-check", "title": "7-day streak", "earned": longest >= 7},
+            {"icon": "bi-stars", "title": "10 check-ins", "earned": n >= 10},
+            {"icon": "bi-trophy", "title": "50 check-ins", "earned": n >= 50},
+        ],
+    }

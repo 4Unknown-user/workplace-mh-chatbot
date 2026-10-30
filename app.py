@@ -125,13 +125,30 @@ def csrf_protect():
 
 @app.context_processor
 def inject():
-    return {"user": current_user(), "csrf": session.get("csrf"), "LABELS": engine.LABELS}
+    u = current_user()
+    ctx = {"user": u, "csrf": session.get("csrf"), "LABELS": engine.LABELS, "unread": 0, "streak": 0}
+    if u and u["role"] == "employee":
+        ctx["unread"] = db().execute("SELECT COUNT(*) FROM warnings WHERE user_id=? AND acknowledged=0",
+                                     (u["id"],)).fetchone()[0]
+        ctx["streak"] = user_summary(u["id"])["streak"]
+    return ctx
+
+
+def user_summary(uid):
+    rows = db().execute("SELECT created_at, stress_level, category FROM assessments WHERE user_id=? "
+                        "ORDER BY created_at", (uid,)).fetchall()
+    return engine.summary([tuple(r) for r in rows])
 
 
 # ---------- pages ----------
 @app.route("/")
 def home():
-    return render_template("index.html")
+    u = current_user()
+    if not u:
+        return render_template("index.html")
+    if u["role"] == "admin":
+        return redirect(url_for("admin"))
+    return render_template("home.html", s=user_summary(u["id"]))
 
 
 @app.route("/register", methods=["GET", "POST"])
@@ -165,7 +182,7 @@ def login():
             session["uid"] = u["id"]
             nxt = request.args.get("next", "")
             if not nxt.startswith("/") or nxt.startswith("//"):  # no open redirects
-                nxt = url_for("admin" if u["role"] == "admin" else "chat")
+                nxt = url_for("home")
             return redirect(nxt)
         flash("Invalid email or password.", "danger")
     return render_template("login.html")
@@ -182,7 +199,9 @@ def logout():
 def chat():
     msgs = db().execute("SELECT sender,text,created_at FROM messages WHERE user_id=? ORDER BY id DESC LIMIT 30",
                         (g.user["id"],)).fetchall()[::-1]
-    return render_template("chat.html", messages=msgs)
+    counts = dict(db().execute("SELECT category, COUNT(*) FROM assessments WHERE user_id=? GROUP BY category",
+                               (g.user["id"],)).fetchall())
+    return render_template("chat.html", messages=msgs, counts=counts)
 
 
 @app.route("/history")
@@ -303,6 +322,7 @@ def api_trends():
         categories=q("SELECT category, COUNT(*) AS n FROM assessments WHERE user_id=? GROUP BY category ORDER BY n DESC"),
         open_warnings=conn.execute("SELECT COUNT(*) FROM warnings WHERE user_id=? AND acknowledged=0", (uid,)).fetchone()[0],
         thresholds={"elevated_avg": engine.ELEVATED_AVG},
+        summary=user_summary(uid),
     )
 
 
