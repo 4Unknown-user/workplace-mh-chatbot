@@ -29,11 +29,11 @@ def add_user(name, email, pw, role="employee", dept=""):
     return uid, True
 
 
-def main():
+def seed(demo):
     random.seed(1)
     with app.app_context():
         add_user("Admin", "admin@mindwork.local", "Admin@1234", role="admin")
-        if "--demo" in sys.argv:
+        if demo:
             with (BASE / "dataset" / "workplace_stress.csv").open(encoding="utf-8") as f:
                 samples = {}
                 for r in csv.DictReader(f):
@@ -61,9 +61,9 @@ def main():
                     conn.execute("INSERT INTO warnings(user_id,kind,detail,created_at) VALUES(?,?,?,?)",
                                  (uid, "rising", "Your stress has risen steadily across recent check-ins.", now()))
         db().commit()
-    print("Seeded. Admin: admin@mindwork.local / Admin@1234" + (" | demo employees: <name>@demo.local / Demo@1234"
-                                                              if "--demo" in sys.argv else ""))
 
 
 if __name__ == "__main__":
-    main()
+    seed("--demo" in sys.argv)
+    print("Seeded. Admin: admin@mindwork.local / Admin@1234" + (" | demo employees: <name>@demo.local / Demo@1234"
+                                                              if "--demo" in sys.argv else ""))

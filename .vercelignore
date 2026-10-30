@@ -1,0 +1,5 @@
+instance/
+__pycache__/
+venv/
+.claude/
+test_app.py

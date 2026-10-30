@@ -56,7 +56,7 @@ workplace-mh-chatbot/
 | recommendations | user_id → users, assessment_id → assessments, rec_key, text |
 | warnings | user_id → users, kind (elevated / rising / sustained_high / crisis), detail, acknowledged |
 
-## Install and run (Windows / macOS / Linux, Python 3.10+)
+## Install and run (Windows / macOS / Linux, Python 3.12+)
 
 ```bash
 cd workplace-mh-chatbot
@@ -96,6 +96,12 @@ Open http://127.0.0.1:5000.
 | Employees | asha@, rahul@, meera@, karan@, neha@, vikram@ `demo.local` / Demo@1234 |
 
 Asha and Neha have a *rising* trend, which triggers early warnings. You can also register a new employee. For a real deployment, set a fixed `SECRET_KEY` environment variable and change the admin password.
+
+## Live demo (Vercel)
+
+https://workplace-mh-chatbot.vercel.app
+
+Vercel only allows writes to `/tmp`, separately for each server instance, and clears it on restart. So the hosted site rebuilds the demo data on every cold start, and registered accounts and chats there are **temporary**. Run it locally for permanent SQLite storage, or move to a hosted database for real use. Set `SECRET_KEY` as a Vercel environment variable so logins survive restarts.
 
 ## Dataset and model results
 

@@ -12,6 +12,7 @@
   <meta name="csrf" content="{{ csrf }}">
 </head>
 <body class="{% block bodyclass %}{% endblock %}">
+{% if hosted %}<div class="demo-note"><i class="bi bi-info-circle"></i> Academic demo. Data may reset at any time, so please don't enter real personal details. Demo login: asha@demo.local / Demo@1234</div>{% endif %}
 {% if user %}
 <div class="shell">
   <aside class="rail" aria-label="Main navigation">

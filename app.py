@@ -17,7 +17,11 @@ import engine
 BASE = Path(__file__).resolve().parent
 app = Flask(__name__)
 app.config["SECRET_KEY"] = os.environ.get("SECRET_KEY") or secrets.token_hex(32)
-app.config["DATABASE"] = os.environ.get("DATABASE", str(BASE / "instance" / "wellbeing.db"))
+HOSTED = bool(os.environ.get("VERCEL"))
+# ponytail: Vercel only allows writes to /tmp, per instance and wiped on restart.
+# Real persistence needs a hosted database (Postgres/Turso) instead of SQLite.
+app.config["DATABASE"] = os.environ.get("DATABASE") or ("/tmp/wellbeing.db" if HOSTED else str(BASE / "instance" / "wellbeing.db"))
+app.config.update(SESSION_COOKIE_SECURE=HOSTED, SESSION_COOKIE_SAMESITE="Lax")
 MIN_GROUP = 3  # admin stats hide any group with fewer distinct employees (k-anonymity)
 
 SCHEMA = """
@@ -95,8 +99,9 @@ def init_db():
 
 # ---------- auth / security helpers ----------
 def current_user():
-    uid = session.get("uid")
-    return db().execute("SELECT * FROM users WHERE id=?", (uid,)).fetchone() if uid else None
+    uid, email = session.get("uid"), session.get("email")
+    # email check: separate hosted instances can give different people the same id
+    return db().execute("SELECT * FROM users WHERE id=? AND email=?", (uid, email)).fetchone() if uid else None
 
 
 def login_required(role=None):
@@ -126,7 +131,8 @@ def csrf_protect():
 @app.context_processor
 def inject():
     u = current_user()
-    ctx = {"user": u, "csrf": session.get("csrf"), "LABELS": engine.LABELS, "unread": 0, "streak": 0}
+    ctx = {"user": u, "csrf": session.get("csrf"), "LABELS": engine.LABELS, "unread": 0, "streak": 0,
+           "hosted": HOSTED}
     if u and u["role"] == "employee":
         ctx["unread"] = db().execute("SELECT COUNT(*) FROM warnings WHERE user_id=? AND acknowledged=0",
                                      (u["id"],)).fetchone()[0]
@@ -179,7 +185,7 @@ def login():
         u = db().execute("SELECT * FROM users WHERE email=?", (email,)).fetchone()
         if u and check_password_hash(u["password_hash"], request.form.get("password", "")):
             session.clear()
-            session["uid"] = u["id"]
+            session["uid"], session["email"] = u["id"], u["email"]
             nxt = request.args.get("next", "")
             if not nxt.startswith("/") or nxt.startswith("//"):  # no open redirects
                 nxt = url_for("home")
@@ -352,6 +358,9 @@ def api_admin_stats():
 
 
 init_db()
+if HOSTED:  # fresh /tmp on every cold start, so rebuild the demo accounts
+    import seed
+    seed.seed(demo=True)
 
 if __name__ == "__main__":
     app.run(debug=os.environ.get("FLASK_DEBUG") == "1")
